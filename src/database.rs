@@ -1,76 +1,50 @@
 use chrono::prelude::*;
-use rorm::Model;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Model)]
+#[allow(non_snake_case)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Lesson {
-    #[rorm(primary_key)]
-    id: i64,
-    day: NaiveDate,
-    schedule_id: i64,
-    subject_id: i64,
-    teacher_id: i64,
-    #[rorm(max_length = 16)]
+    id: usize,
+    date: DateTime<Utc>,
+    // TODO: add subject id
+    teacher: String,
     classroom: String,
 }
 
-#[derive(Model)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Subject {
-    #[rorm(id)]
-    id: i64,
-    #[rorm(max_length = 255)]
     subject: String,
 }
 
-#[derive(Model)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct User {
-    #[rorm(primary_key)]
-    id: i64,
-    #[rorm(max_length = 255)]
-    username: String,
-    admin: bool,
+    pub id: i64,
+    pub username: String,
+    pub admin: bool,
 }
 
-#[derive(Model, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Mark {
-    #[rorm(id)]
-    id: i64,
-    lesson_id: i64,
-    user_id: i64,
-    #[rorm(max_length = 16)]
-    mark: String,
+    pub id: i64,
+    // TODO: add lesson id
+    // TODO: add user id
+    pub mark: String,
 }
 
-#[derive(Model)]
-pub struct Teacher {
-    #[rorm(id)]
-    id: i64,
-    #[rorm(max_length = 255)]
-    name: String,
-    #[rorm(max_length = 255)]
-    shortname: String,
-}
-
-#[derive(Model)]
-pub struct Day {
-    #[rorm(id)]
-    id: i64,
-}
-
-#[derive(Model)]
-pub struct Schedule {
-    #[rorm(id)]
-    id: i64,
-    start_time: NaiveTime,
-    end_time: NaiveTime,
-    saturday: bool,
-}
-
-#[derive(Model)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MonthMark {
-    #[rorm(id)]
-    id: i64,
-    subject_id: i64,
-    #[rorm(max_length = 3)]
-    mark: String,
+    pub id: i64,
+    // TODO: add subject id
+    // TODO: add user id
+    pub mark: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Schedule {
+    pub id: i64,
+    pub start_time: NaiveTime,
+    pub end_time: NaiveTime,
+    pub saturday: bool,
+}
+
+
