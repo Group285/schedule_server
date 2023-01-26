@@ -2,13 +2,12 @@ mod client;
 mod database;
 mod server;
 
-use chrono::prelude::*;
-use tokio::sync::watch;
-use std::{env, error};
-use mongodb::Client;
+use client::get_connection;
+use database::update_database;
 use mongodb::options::ClientOptions;
+use mongodb::Client;
+use std::{env, error};
 use warp::Filter;
-use crate::database::{Schedule, Subject};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
@@ -19,14 +18,22 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     }
     pretty_env_logger::init();
 
+    let client = get_client("mongodb://localhost:27017").await;
 
-    let mut database = get_client("mongodb://localhost:27017")
-        .await
-        .database("schedule");
+    let db = client.database("schedule");    
+    tokio::spawn(async move {
+        let mut json_receiver = get_connection().await;
+        while let Ok(()) = json_receiver.changed().await {
+            if let Some(value) = json_receiver.borrow().as_ref() {
+                update_database(db.clone(), value.to_vec()); 
+            }
+        }
+    });
 
-    // let routes = server::get_filters(database).with(warp::log("server"));
-    // // should never return
-    // warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+    let db = client.database("schedule");
+    let routes = server::get_filters(db).with(warp::log("server"));
+    // should never return
+    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
     Ok(())
 }
 

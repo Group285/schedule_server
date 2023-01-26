@@ -1,28 +1,29 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration};
 
 use chrono::prelude::*;
 use serde::Deserialize;
 use tokio::{sync::watch, time::interval};
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct RawSubject {
-    id: usize,
-    groupId: usize,
-    group: String,
-    date: DateTime<Utc>,
-    sort: usize,
-    subjectId: usize,
-    subject: String,
-    teacherId: usize,
-    teacher: String,
-    classroomId: usize,
-    classroom: String,
-    startTitle: String,
-    endTitle: String,
+    pub id: i64,
+    pub groupId: i64,
+    pub group: String,
+    pub date: DateTime<Utc>,
+    pub sort: i64,
+    pub subjectId: i64,
+    pub subject: String,
+    pub teacherId: i64,
+    pub teacher: String,
+    pub classroomId: i64,
+    pub classroom: String,
+    pub startTitle: String,
+    pub endTitle: String,
 }
 
-/// # get_response() -> watch::Receiver
+/// # get_connection() -> watch::Receiver
 /// ## Url: https://production.collegeschedule.ru:2096/schedule
 /// ### Parameters:
 /// - from: time in epoch where we start
