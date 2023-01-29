@@ -20,12 +20,13 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 
     let client = get_client("mongodb://localhost:27017").await;
 
-    let db = client.database("schedule");    
+    let db = client.database("schedule");
     tokio::spawn(async move {
         let mut json_receiver = get_connection().await;
-        while let Ok(()) = json_receiver.changed().await {
-            if let Some(value) = json_receiver.borrow().as_ref() {
-                update_database(db.clone(), value.to_vec()); 
+
+        while let Some(value) = json_receiver.recv().await {
+            if let Some(value) = value {
+                update_database(db.clone(), value).await;
             }
         }
     });

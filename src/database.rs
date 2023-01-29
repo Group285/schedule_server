@@ -8,7 +8,9 @@ use crate::client::RawSubject;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Lesson {
     pub id: i64,
+    pub sort: i64,
     pub date: DateTime<Utc>,
+    pub schedule_id: i64,
     pub subject_id: i64,
     pub teacher: String,
     pub classroom: String,
@@ -45,17 +47,19 @@ pub struct MonthMark {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Schedule {
+    pub id: i64,
     pub sort: i64,
     pub start_time: i64,
     pub end_time: i64,
     pub saturday: bool,
 }
 
-pub async fn update_database(db: Database, arr: Vec<RawSubject>) -> Option<()> {
+pub async fn update_database(db: Database, arr: Vec<RawSubject>) -> Option<i8> {
     let subjects_coll = db.collection::<Subject>("subjects");
     let lessons_coll = db.collection::<Lesson>("lessons");
     let schedule_coll = db.collection::<Schedule>("schedule");
 
+    println!("parse subjects");
     let subjects: Vec<Subject> = arr
         .iter()
         .map(|raw_subject| Subject {
@@ -64,18 +68,47 @@ pub async fn update_database(db: Database, arr: Vec<RawSubject>) -> Option<()> {
         })
         .collect();
 
-    let lessons = arr.iter().map(|raw_subject| {
-        let sort = raw_subject.sort as i64;
+    subjects_coll.insert_many(subjects, None).await.unwrap();
 
-        // FIXME: fix find_one being non blocking
-        tokio::task::spawn_blocking(move || {
-            schedule_coll.find_one(
+    let mut lessons: Vec<Lesson> = Vec::new();
+    for raw_subject in arr {
+        println!("parse lessons from\n{:#?}", raw_subject);
+        let date = DateTime::from_utc(
+            NaiveDateTime::from_timestamp_opt(raw_subject.date + 25200, 0)?,
+            Utc,
+        );
+
+        println!("date from raw subject {}", date);
+        println!(
+            "getting schedule with\nsort: {}\nweekday: {}",
+            raw_subject.sort + 1,
+            date.weekday().number_from_monday() == 6
+        );
+        let schedule = schedule_coll
+            .find_one(
                 doc! {
-                    "sort": sort
+                    "sort": raw_subject.sort + 1,
+                    "weekday": date.weekday().number_from_monday() == 6
                 },
                 None,
-            );
+            )
+            .await
+            .ok()?
+            .unwrap();
+        lessons.push(Lesson {
+            id: raw_subject.id,
+            sort: raw_subject.sort,
+            date,
+            schedule_id: schedule.id,
+            subject_id: raw_subject.subjectId,
+            teacher: raw_subject.teacher,
+            classroom: raw_subject.classroom,
         });
-    });
-    Some(())
+    }
+
+    lessons_coll.insert_many(lessons, None).await.unwrap();
+
+    println!("subject and lessons sended successfully");
+
+    Some(4)
 }
