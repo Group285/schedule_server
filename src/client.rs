@@ -7,7 +7,7 @@ use tokio::{sync::mpsc, time::interval};
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]
-pub struct RawSubject {
+pub struct RawData {
     pub id: i64,
     pub groupId: i64,
     pub group: String,
@@ -28,8 +28,8 @@ pub struct RawSubject {
 /// ### Parameters:
 /// - from: time in epoch where we start
 /// - to: time in epoch where we end
-pub(crate) async fn get_connection() -> mpsc::Receiver<Option<Vec<RawSubject>>> {
-    let (tx, rx) = mpsc::channel::<Option<Vec<RawSubject>>>(1);
+pub(crate) async fn get_connection() -> mpsc::Receiver<Option<Vec<RawData>>> {
+    let (tx, rx) = mpsc::channel::<Option<Vec<RawData>>>(1);
     let mut interval = interval(Duration::from_secs_f64(21600.0));
     tokio::spawn(async move {
         loop {
@@ -43,7 +43,7 @@ pub(crate) async fn get_connection() -> mpsc::Receiver<Option<Vec<RawSubject>>> 
                 .await
                 {
                     if let Ok(text) = response.text().await {
-                        let json: Vec<RawSubject> = serde_json::from_str(text.as_str()).unwrap();
+                        let json: Vec<RawData> = serde_json::from_str(text.as_str()).unwrap();
                         tx.send(Some(json)).await.unwrap();
                         println!("send response successfully");
                     } else {

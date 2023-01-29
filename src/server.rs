@@ -32,7 +32,7 @@ mod filters {
             .and(warp::post())
             // WARNING: can use too much memory
             .and(warp::body::json())
-            .and_then(super::handlers::add_day)
+            .and_then(super::handlers::add_mark)
     }
 
     pub(crate) fn update_day(
@@ -40,7 +40,7 @@ mod filters {
         path!("schedule" / u64)
             .and(warp::put())
             .and(warp::body::json())
-            .and_then(super::handlers::update_day)
+            .and_then(super::handlers::update_mark)
     }
 
     pub(crate) fn delete_day(
@@ -49,14 +49,7 @@ mod filters {
         path!("schedule" / u64)
             .and(warp::delete())
             .and(with_db(db.clone()))
-            .and_then(super::handlers::delete_day)
-    }
-
-    pub(crate) fn update_schedule(
-    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        path!("dataupdate")
-            .and(warp::put())
-            .and_then(super::handlers::update_schedule)
+            .and_then(super::handlers::delete_mark)
     }
 
     fn with_db(
@@ -78,19 +71,15 @@ mod handlers {
         Ok(StatusCode::OK)
     }
 
-    pub async fn add_day(day: Vec<Mark>) -> Result<impl warp::Reply, Infallible> {
+    pub async fn add_mark(mark: Mark, db: Database) -> Result<impl warp::Reply, Infallible> {
         Ok(StatusCode::OK)
     }
 
-    pub async fn update_day(id: u64, day: Vec<Mark>) -> Result<impl warp::Reply, Infallible> {
+    pub async fn update_mark(id: u64, mark: Mark, db: Database) -> Result<impl warp::Reply, Infallible> {
         Ok(StatusCode::OK)
     }
 
-    pub async fn delete_day(id: u64, db: Database) -> Result<impl warp::Reply, Infallible> {
-        Ok(StatusCode::OK)
-    }
-
-    pub async fn update_schedule() -> Result<impl warp::Reply, Infallible> {
+    pub async fn delete_mark(id: u64, db: Database) -> Result<impl warp::Reply, Infallible> {
         Ok(StatusCode::OK)
     }
 }

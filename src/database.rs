@@ -1,15 +1,17 @@
 use chrono::prelude::*;
-use mongodb::{bson::doc, Database};
+use mongodb::{bson::doc, Database, Cursor};
 use serde::{Deserialize, Serialize};
+use futures::stream::{StreamExt, TryStreamExt};
+use mongodb::bson::Document;
 
-use crate::client::RawSubject;
+use crate::client::RawData;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Lesson {
     pub id: i64,
     pub sort: i64,
-    pub date: DateTime<Utc>,
+    pub date: i64,
     pub schedule_id: i64,
     pub subject_id: i64,
     pub teacher: String,
@@ -54,7 +56,7 @@ pub struct Schedule {
     pub saturday: bool,
 }
 
-pub async fn update_database(db: Database, arr: Vec<RawSubject>) -> Option<i8> {
+pub async fn update_database(db: Database, arr: Vec<RawData>) -> Option<()> {
     let subjects_coll = db.collection::<Subject>("subjects");
     let lessons_coll = db.collection::<Lesson>("lessons");
     let schedule_coll = db.collection::<Schedule>("schedule");
@@ -73,32 +75,27 @@ pub async fn update_database(db: Database, arr: Vec<RawSubject>) -> Option<i8> {
     let mut lessons: Vec<Lesson> = Vec::new();
     for raw_subject in arr {
         println!("parse lessons from\n{:#?}", raw_subject);
-        let date = DateTime::from_utc(
-            NaiveDateTime::from_timestamp_opt(raw_subject.date + 25200, 0)?,
-            Utc,
-        );
 
         println!("date from raw subject {}", date);
         println!(
-            "getting schedule with\nsort: {}\nweekday: {}",
-            raw_subject.sort + 1,
-            date.weekday().number_from_monday() == 6
+            "getting schedule with\n{:#}",
+            doc! {
+                    "sort": raw_subject.sort + 1,
+                    "weekday": date.weekday().number_from_monday() == 6
+                },
         );
         let schedule = schedule_coll
             .find_one(
                 doc! {
                     "sort": raw_subject.sort + 1,
-                    "weekday": date.weekday().number_from_monday() == 6
+                    "saturday": date.weekday().number_from_monday() == 6
                 },
                 None,
-            )
-            .await
-            .ok()?
-            .unwrap();
+            ).await.ok()??;
         lessons.push(Lesson {
             id: raw_subject.id,
             sort: raw_subject.sort,
-            date,
+            date: raw_subject.date + 25200,
             schedule_id: schedule.id,
             subject_id: raw_subject.subjectId,
             teacher: raw_subject.teacher,
@@ -110,5 +107,5 @@ pub async fn update_database(db: Database, arr: Vec<RawSubject>) -> Option<i8> {
 
     println!("subject and lessons sended successfully");
 
-    Some(4)
+    Some(())
 }
