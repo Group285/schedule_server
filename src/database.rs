@@ -13,17 +13,25 @@ pub struct Lesson {
     pub id: i64,
     pub sort: i64,
     pub date: i64,
-    pub start_time: i64,
-    pub end_time: i64,
+    pub start: i64,
+    pub end: i64,
     pub subject_id: i64,
-    pub teacher: String,
-    pub classroom: String,
+    pub classroom: Classroom,
+}
+
+#[derive(Debug,Serialize,Deserialize)]
+pub struct Classroom {
+    pub id: i64,
+    pub title: String,
+    pub has_computers: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Subject {
     pub id: i64,
     pub subject: String,
+    pub teacher_id: i64,
+    pub teacher_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,54 +67,54 @@ pub async fn update_database(db: Database, arr: Vec<RawData>) -> Option<()> {
     let mut lessons: Vec<Lesson> = Vec::new();
     for raw_subject in arr {
         // getting subject, skip if exist
-        debug!(
-            "getting subject with {:#?}",
-            doc! {
-                "id": raw_subject.subjectId
-            },
-        );
-        let finded_subj = subjects_coll
-            .find_one(
-                doc! {
-                    "id": raw_subject.subjectId,
-                },
-                None,
-            )
-            .await
-            .ok()?;
-        if let Some(subject) = finded_subj {
-            debug!("subject found, skipping\n{:#?}", subject);
-        } else {
-            info!("adding subject");
-            subjects.push(Subject {
-                id: raw_subject.subjectId,
-                subject: raw_subject.subject,
-            });
-        }
-        // getting lesson, skip if exist
-        debug!(
-            "getting lesson with {:#?}",
-            doc! {
-                "id": raw_subject.id
-            }
-        );
-        let finded_lesson = lessons_coll.find_one(
-            doc! {
-                "id": raw_subject.id
-            },
-            None,
-        );
-        if let Some(lesson) = finded_lesson {
-            debug!("lesson found, skipping\n{:#?}", subject);
-        } else {
-            info!("adding lesson");
-            lessons.push(Lesson{
-                id: raw_subject.id,
-                sort: raw_subject.sort,
-                date: raw_subject.date,
-                start_time: raw_subject
-            });
-        }
+        // debug!(
+        //     "getting subject with {:#?}",
+        //     doc! {
+        //         "id": raw_subject.subjectId
+        //     },
+        // );
+        // let finded_subj = subjects_coll
+        //     .find_one(
+        //         doc! {
+        //             "id": raw_subject.subjectId,
+        //         },
+        //         None,
+        //     )
+        //     .await
+        //     .ok()?;
+        // if let Some(subject) = finded_subj {
+        //     debug!("subject found, skipping\n{:#?}", subject);
+        // } else {
+        //     info!("adding subject");
+        //     subjects.push(Subject {
+        //         id: raw_subject.subjectId,
+        //         subject: raw_subject.subject,
+        //     });
+        // }
+        // // getting lesson, skip if exist
+        // debug!(
+        //     "getting lesson with {:#?}",
+        //     doc! {
+        //         "id": raw_subject.id
+        //     }
+        // );
+        // let finded_lesson = lessons_coll.find_one(
+        //     doc! {
+        //         "id": raw_subject.id
+        //     },
+        //     None,
+        // );
+        // if let Some(lesson) = finded_lesson {
+        //     debug!("lesson found, skipping\n{:#?}", subject);
+        // } else {
+        //     info!("adding lesson");
+        //     lessons.push(Lesson{
+        //         id: raw_subject.id,
+        //         sort: raw_subject.sort,
+        //         date: raw_subject.date,
+        //         start_time: raw_subject
+        //     });
+        // }
     }
 
     lessons_coll.insert_many(lessons, None).await.ok()?;

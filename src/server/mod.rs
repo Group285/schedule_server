@@ -3,22 +3,7 @@ use warp::Filter;
 
 mod filters;
 mod handlers;
-
-
-mod modules {
-    use serde::Deserialize;
-    use warp::reject;
-
-    #[derive(Debug, Deserialize)]
-    pub(crate) struct ScheduleListOptions {
-        pub from: Option<i64>,
-        pub to: Option<i64>,
-    }
-
-    #[derive(Debug)]
-    pub(crate) struct Unauthtorized;
-    impl reject::Reject for Unauthtorized {}
-}
+mod modules;
 
 pub fn get_filters(
     db: Database,
