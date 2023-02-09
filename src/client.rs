@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use chrono::prelude::*;
+use log::{info, error, debug};
 use serde::Deserialize;
 use tokio::{sync::mpsc, time::interval};
 
@@ -34,8 +35,9 @@ pub(crate) async fn get_connection() -> mpsc::Receiver<Option<Vec<RawData>>> {
     tokio::spawn(async move {
         loop {
             interval.tick().await;
-            println!("client tick");
+            info!("client tick");
             if let Some((from, to)) = get_current_week(Utc::now()) {
+                debug!("get data from {} to {}", from, to);
                 if let Ok(response) = reqwest::get(format!(
                     "https://production.collegeschedule.ru:2096/schedule?from={}&to={}&groupId=34&titles=true",
                     from, to
@@ -45,9 +47,9 @@ pub(crate) async fn get_connection() -> mpsc::Receiver<Option<Vec<RawData>>> {
                     if let Ok(text) = response.text().await {
                         let json: Vec<RawData> = serde_json::from_str(text.as_str()).unwrap();
                         tx.send(Some(json)).await.unwrap();
-                        println!("send response successfully");
+                        info!("send response successfully");
                     } else {
-                        println!("send failed");
+                        error!("send response failed");
                         tx.send(None).await.unwrap();
                     }
                 }

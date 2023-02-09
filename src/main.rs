@@ -1,3 +1,6 @@
+extern crate pretty_env_logger;
+extern crate log;
+
 mod client;
 mod database;
 mod server;

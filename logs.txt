@@ -1,0 +1,128 @@
+warning: unused imports: `StreamExt`, `TryStreamExt`
+ --> src/database.rs:2:23
+  |
+2 | use futures::stream::{StreamExt, TryStreamExt};
+  |                       ^^^^^^^^^  ^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `warn`
+ --> src/database.rs:3:17
+  |
+3 | use log::{info, warn, error, debug};
+  |                 ^^^^
+
+warning: unused import: `mongodb::bson::Document`
+ --> src/database.rs:4:5
+  |
+4 | use mongodb::bson::Document;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Cursor`
+ --> src/database.rs:5:26
+  |
+5 | use mongodb::{bson::doc, Cursor, Database};
+  |                          ^^^^^^
+
+warning: unused import: `pretty_env_logger::env_logger::Logger`
+ --> src/database.rs:6:5
+  |
+6 | use pretty_env_logger::env_logger::Logger;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Collection`
+  --> src/server.rs:14:19
+   |
+14 |     use mongodb::{Collection, Database};
+   |                   ^^^^^^^^^^
+
+warning: unused import: `serde::Serialize`
+  --> src/server.rs:15:9
+   |
+15 |     use serde::Serialize;
+   |         ^^^^^^^^^^^^^^^^
+
+warning: unused import: `serde_json::json`
+  --> src/server.rs:70:9
+   |
+70 |     use serde_json::json;
+   |         ^^^^^^^^^^^^^^^^
+
+warning: unused variable: `db`
+   --> src/server.rs:103:29
+    |
+103 |     pub async fn list_users(db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                             ^^ help: if this is intentional, prefix it with an underscore: `_db`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `db`
+   --> src/server.rs:107:33
+    |
+107 |     pub async fn get_user_marks(db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                                 ^^ help: if this is intentional, prefix it with an underscore: `_db`
+
+warning: unused variable: `mark`
+   --> src/server.rs:111:27
+    |
+111 |     pub async fn add_mark(mark: Mark, db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                           ^^^^ help: if this is intentional, prefix it with an underscore: `_mark`
+
+warning: unused variable: `db`
+   --> src/server.rs:111:39
+    |
+111 |     pub async fn add_mark(mark: Mark, db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                                       ^^ help: if this is intentional, prefix it with an underscore: `_db`
+
+warning: unused variable: `id`
+   --> src/server.rs:116:9
+    |
+116 |         id: i64,
+    |         ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `mark`
+   --> src/server.rs:117:9
+    |
+117 |         mark: Mark,
+    |         ^^^^ help: if this is intentional, prefix it with an underscore: `_mark`
+
+warning: unused variable: `db`
+   --> src/server.rs:118:9
+    |
+118 |         db: Database,
+    |         ^^ help: if this is intentional, prefix it with an underscore: `_db`
+
+warning: unused variable: `id`
+   --> src/server.rs:123:30
+    |
+123 |     pub async fn delete_mark(id: i64, db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                              ^^ help: if this is intentional, prefix it with an underscore: `_id`
+
+warning: unused variable: `db`
+   --> src/server.rs:123:39
+    |
+123 |     pub async fn delete_mark(id: i64, db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                                       ^^ help: if this is intentional, prefix it with an underscore: `_db`
+
+warning: function `list_users` is never used
+   --> src/server.rs:103:18
+    |
+103 |     pub async fn list_users(db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                  ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: function `get_user_marks` is never used
+   --> src/server.rs:107:18
+    |
+107 |     pub async fn get_user_marks(db: Database) -> Result<impl warp::Reply, Infallible> {
+    |                  ^^^^^^^^^^^^^^
+
+warning: `schedule285_server` (bin "schedule285_server") generated 19 warnings
+    Finished dev [unoptimized + debuginfo] target(s) in 0.10s
+     Running `target/debug/schedule285_server`
+ INFO  warp::server > Server::run; addr=127.0.0.1:3030
+ INFO  warp::server > listening on http://127.0.0.1:3030
+ INFO  schedule285_server::client > client tick
+ INFO  schedule285_server::client > send response successfully
+ INFO  schedule285_server::database > parse subjects

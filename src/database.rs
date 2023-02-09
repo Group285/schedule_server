@@ -1,18 +1,20 @@
 use chrono::prelude::*;
-use mongodb::{bson::doc, Database, Cursor};
-use serde::{Deserialize, Serialize};
 use futures::stream::{StreamExt, TryStreamExt};
+use log::{debug, error, info, warn};
 use mongodb::bson::Document;
+use mongodb::{bson::doc, Cursor, Database};
+use pretty_env_logger::env_logger::Logger;
+use serde::{Deserialize, Serialize};
 
 use crate::client::RawData;
 
-#[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Lesson {
     pub id: i64,
     pub sort: i64,
     pub date: i64,
-    pub schedule_id: i64,
+    pub start_time: i64,
+    pub end_time: i64,
     pub subject_id: i64,
     pub teacher: String,
     pub classroom: String,
@@ -26,7 +28,7 @@ pub struct Subject {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
-    pub id: i64,
+    pub uid: String,
     pub username: String,
     pub admin: bool,
 }
@@ -47,65 +49,70 @@ pub struct MonthMark {
     pub mark: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Schedule {
-    pub id: i64,
-    pub sort: i64,
-    pub start_time: i64,
-    pub end_time: i64,
-    pub saturday: bool,
-}
-
 pub async fn update_database(db: Database, arr: Vec<RawData>) -> Option<()> {
-    let subjects_coll = db.collection::<Subject>("subjects");
-    let lessons_coll = db.collection::<Lesson>("lessons");
-    let schedule_coll = db.collection::<Schedule>("schedule");
+    // TODO: rework function for new api(we have access to start/end time of lesson)
+    let subjects_coll = db.collection::<Subject>("subjects"); let lessons_coll = db.collection::<Lesson>("lessons");
 
-    println!("parse subjects");
-    let subjects: Vec<Subject> = arr
-        .iter()
-        .map(|raw_subject| Subject {
-            id: raw_subject.subjectId,
-            subject: raw_subject.subject.to_string(),
-        })
-        .collect();
+    info!("parse rawdata");
 
-    subjects_coll.insert_many(subjects, None).await.unwrap();
-
+    let mut subjects: Vec<Subject> = Vec::new();
     let mut lessons: Vec<Lesson> = Vec::new();
     for raw_subject in arr {
-        println!("parse lessons from\n{:#?}", raw_subject);
-
-        println!("date from raw subject {}", date);
-        println!(
-            "getting schedule with\n{:#}",
+        // getting subject, skip if exist
+        debug!(
+            "getting subject with {:#?}",
             doc! {
-                    "sort": raw_subject.sort + 1,
-                    "weekday": date.weekday().number_from_monday() == 6
-                },
+                "id": raw_subject.subjectId
+            },
         );
-        let schedule = schedule_coll
+        let finded_subj = subjects_coll
             .find_one(
                 doc! {
-                    "sort": raw_subject.sort + 1,
-                    "saturday": date.weekday().number_from_monday() == 6
+                    "id": raw_subject.subjectId,
                 },
                 None,
-            ).await.ok()??;
-        lessons.push(Lesson {
-            id: raw_subject.id,
-            sort: raw_subject.sort,
-            date: raw_subject.date + 25200,
-            schedule_id: schedule.id,
-            subject_id: raw_subject.subjectId,
-            teacher: raw_subject.teacher,
-            classroom: raw_subject.classroom,
-        });
+            )
+            .await
+            .ok()?;
+        if let Some(subject) = finded_subj {
+            debug!("subject found, skipping\n{:#?}", subject);
+        } else {
+            info!("adding subject");
+            subjects.push(Subject {
+                id: raw_subject.subjectId,
+                subject: raw_subject.subject,
+            });
+        }
+        // getting lesson, skip if exist
+        debug!(
+            "getting lesson with {:#?}",
+            doc! {
+                "id": raw_subject.id
+            }
+        );
+        let finded_lesson = lessons_coll.find_one(
+            doc! {
+                "id": raw_subject.id
+            },
+            None,
+        );
+        if let Some(lesson) = finded_lesson {
+            debug!("lesson found, skipping\n{:#?}", subject);
+        } else {
+            info!("adding lesson");
+            lessons.push(Lesson{
+                id: raw_subject.id,
+                sort: raw_subject.sort,
+                date: raw_subject.date,
+                start_time: raw_subject
+            });
+        }
     }
 
-    lessons_coll.insert_many(lessons, None).await.unwrap();
+    lessons_coll.insert_many(lessons, None).await.ok()?;
+    subjects_coll.insert_many(subjects, None).await.ok()?;
 
-    println!("subject and lessons sended successfully");
+    info!("subject and lessons sended successfully");
 
     Some(())
 }
