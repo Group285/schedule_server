@@ -1,4 +1,5 @@
 use log::{error, info};
+use serde::Deserialize;
 use serde_json::Value;
 use crate::database::{Classroom, Lesson, Subject};
 
@@ -138,7 +139,7 @@ impl RawData {
     /// returns Some(...) if `from` and `to` are valid, None if any error appears
     /// * `from: i64` - date in epoch to search from
     /// * `to: i64` - date in epoch to search to
-    pub async fn get_raw_data(from: i64, to: i64) -> Option<Vec<Self>> {
+    pub async fn get(from: i64, to: i64) -> Option<Vec<Self>> {
         if let Ok(response) = reqwest::get(format!(
             "https://production.collegeschedule.ru:2096/v4/schedule?from={}&to={}&groupId=34&titles=true",
             from, to
@@ -149,7 +150,7 @@ impl RawData {
                 let json: Vec<Self> = serde_json::from_str(text.as_str()).unwrap();
                 if !json.is_empty() {
                     info!("send response successfully");
-                    Some(json)
+                    return Some(json);
                 }
             }
         }
