@@ -13,4 +13,3 @@ pub fn get_filters(
         .or(filters::update_mark(&db))
         .or(filters::delete_mark(&db))
 }
-

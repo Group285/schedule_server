@@ -1,22 +1,21 @@
 pub mod rawdata;
 
-use std::time::Duration;
+use std::future;
 
-use rawdata::RawData;
-use crate::database::{Classroom, Lesson, Subject};
-use chrono::prelude::*;
+use crate::database::{add_lessons_to_database, add_subjects_to_database, Lesson};
 use futures::StreamExt;
-use log::{debug, error, info};
+use log::{debug, error};
 use mongodb::bson::doc;
-use mongodb::{Collection, Database, Cursor};
-use serde::Deserialize;
-use serde_json::Value;
-use tokio::{sync::mpsc, time::interval};
+use mongodb::Database;
+
+use self::rawdata::RawData;
 
 /// returns None if some error occurs
 /// returns Some(...) otherwise
 pub async fn get_lessons(from: i64, to: i64, db: Database) -> Option<Vec<Lesson>> {
-    let mut lessons = db.collection::<Lesson>("lessons")
+    debug!("get_lessons call");
+    let mut lessons: Vec<Lesson> = db
+        .collection::<Lesson>("lessons")
         .find(
             doc! {
                 "date": doc! {
@@ -27,19 +26,26 @@ pub async fn get_lessons(from: i64, to: i64, db: Database) -> Option<Vec<Lesson>
             None,
         )
         .await
-        .ok()?;
+        .ok()?
+        .filter(|lesson| {
+            if let Err(msg) = lesson {
+                error!("get_lessons error {:#?}", msg);
+                return future::ready(false);
+            }
+            future::ready(true)
+        })
+        .map(|lesson| lesson.unwrap())
+        .collect()
+        .await;
 
-    let mut result: Vec<Lesson> = Vec::new();
-
-    while let Some(lesson) = lessons.next().await {
-        result.push(lesson.ok()?);
+    // 86400 - number of seconds in day
+    for x in (from..=to).step_by(86400) {
+        if lessons.iter().filter(|lesson| lesson.date == x).count() == 0 {
+            let raw_data = RawData::get(from, to).await?;
+            lessons = add_lessons_to_database(&db, raw_data.clone()).await?;
+            add_subjects_to_database(&db, raw_data.clone()).await?;
+            break;
+        }
     }
-
-    // TODO: check if all days are exist in database
-    if result.is_empty() {
-        let raw_data = RawData::get(from, to).await?;
-        let lessons: Vec<Lesson> = raw_data.iter().map(|data| data.get_lesson()).collect();
-        let subjects: Vec<Subject> = raw_data.iter().map(|data| data.get_subject()).collect();
-    }
-    Some(result)
+    Some(lessons)
 }

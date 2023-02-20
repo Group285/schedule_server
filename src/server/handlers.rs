@@ -7,7 +7,10 @@ use warp::{
     hyper, Rejection,
 };
 
-use crate::database::{Lesson, Mark, User};
+use crate::{
+    client,
+    database::{Lesson, Mark, User},
+};
 
 use super::modules::{ScheduleListOptions, Unauthtorized};
 
@@ -15,25 +18,10 @@ pub(crate) async fn list_schedule(
     data: ScheduleListOptions,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    let lessons = db.collection::<Lesson>("lessons");
-    // FIXME: unwrap raise a error
-    let mut lessons_cursor = lessons
-        .find(
-            None,
-            FindOptions::builder()
-                .min(doc! {"date": data.from})
-                .max(doc! {"date": data.to})
-                .build(),
-        )
+    let lessons = client::get_lessons(data.from.unwrap_or(0), data.to.unwrap_or(0), db)
         .await
-        .unwrap();
-
-    let mut list = Vec::new();
-    while let Some(res) = lessons_cursor.next().await {
-        list.push(res.unwrap());
-    }
-
-    Ok(warp::reply::json(&list))
+        .unwrap_or(vec![]);
+    Ok(warp::reply::json(&lessons))
 }
 
 pub(crate) async fn list_users(db: Database) -> Result<impl warp::Reply, Infallible> {

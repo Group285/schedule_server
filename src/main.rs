@@ -1,11 +1,11 @@
-extern crate pretty_env_logger;
 extern crate log;
+extern crate pretty_env_logger;
 
 mod client;
 mod database;
 mod server;
 
-use database::update_database;
+// use database::update_database;
 use mongodb::options::ClientOptions;
 use mongodb::Client;
 use std::{env, error};

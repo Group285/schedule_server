@@ -1,25 +1,22 @@
-[tasks.cleanmodels]
-command = "rm"
-args = ["-f", ".models.json"]
-
-[tasks.genmodels]
+[tasks.format]
+install_crate = "rustfmt"
 command = "cargo"
-args = ["run", "-r", "-F rorm-main"]
-dependencies = ["cleanmodels"]
+args = ["fmt", "--", "--emit=files"]
 
-[tasks.make-migrations]
-command = "rorm-cli"
-args = ["make-migrations"]
-dependencies = ["genmodels"]
-
-[tasks.migrate]
-command = "rorm-cli"
-args = ["migrate"]
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
 
 [tasks.build]
 command = "cargo"
 args = ["build", "--release"]
+dependencies = ["format"]
 
 [tasks.run]
 command = "cargo"
-args = ["run", "--release"]
+args = ["run"]
+dependencies = ["clean", "format"]
+
+[tasks.run-debug]
+command = "env"
+args = ["RUST_LOG=debug", "cargo", "run", "2>&1,"]

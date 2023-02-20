@@ -1,7 +1,7 @@
+use crate::database::{Classroom, Lesson, Subject};
 use log::{error, info};
 use serde::Deserialize;
 use serde_json::Value;
-use crate::database::{Classroom, Lesson, Subject};
 
 // example rawdata json from v4 api (https://production.collegeschedule.ru:2096/v4/schedule?from=1675875600&to=1675875600&groupId=34&classroomId=28&subjectId=952):
 // [
@@ -60,7 +60,6 @@ use crate::database::{Classroom, Lesson, Subject};
 //   }
 // ]
 
-
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]
@@ -85,53 +84,47 @@ pub struct RawData {
     classroomId: i64,
 
     start: i64,
-    startTitle: i64,
+    startTitle: String,
 
     end: i64,
-    endTitle: i64,
+    endTitle: String,
 }
 
 impl RawData {
     /// returns a lesson formatted data
     pub fn get_lesson(&self) -> Lesson {
+        let subject_id = format!("{}{}", self.subjectId, self.teacherId)
+            .parse()
+            .unwrap();
         Lesson {
-            id: self.id,
+            _id: self.id,
             sort: self.sort,
             date: self.date,
             start: self.start * 60,
             end: self.end * 60,
-            subject_id: self.subjectId,
+            subject_id,
             classroom: self.get_classroom(),
         }
     }
 
     /// returns a subject formatted data
     pub fn get_subject(&self) -> Subject {
+        let subject_id = format!("{}{}", self.subjectId, self.teacherId)
+            .parse()
+            .unwrap();
         Subject {
-            id: self.subjectId,
-            subject: self.subject["title"]
-                .as_str()
-                .unwrap()
-                .to_owned(),
-            teacher_id: self.teacherId,
-            teacher_name: self.teacher["full"]
-                .as_str()
-                .unwrap()
-                .to_owned(),
+            _id: subject_id,
+            subject: self.subject["title"].as_str().unwrap().to_owned(),
+            teacher_name: self.teacher["full"].as_str().unwrap().to_owned(),
         }
     }
 
     /// returns a classroom formatted data
     fn get_classroom(&self) -> Classroom {
         Classroom {
-            id: self.classroomId,
-            title: self.classroom["title"]
-                .as_str()
-                .unwrap()
-                .to_owned(),
-            has_computers: self.classroom["hasComputers"]
-                .as_bool()
-                .unwrap(),
+            _id: self.classroomId,
+            title: self.classroom["title"].as_str().unwrap().to_owned(),
+            has_computers: self.classroom["hasComputers"].as_bool().unwrap(),
         }
     }
 
@@ -157,5 +150,4 @@ impl RawData {
         error!("send response failed");
         None
     }
-
 }

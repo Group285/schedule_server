@@ -1,10 +1,5 @@
-use log::info;
-use mongodb::{Collection, Database};
-use serde::Serialize;
-use warp::Rejection;
+use mongodb::Database;
 use warp::{path, Filter};
-
-use crate::database::User;
 
 use super::modules::ScheduleListOptions;
 
@@ -48,7 +43,9 @@ pub(crate) fn delete_mark(
         .and_then(super::handlers::delete_mark)
 }
 
-pub(crate) fn register(db: &Database) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub(crate) fn register(
+    db: &Database,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     path!("auth" / String)
         .and(warp::get())
         .and(with_db(db.clone()))
@@ -60,4 +57,3 @@ fn with_db(
 ) -> impl Filter<Extract = (Database,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || db.clone())
 }
-
