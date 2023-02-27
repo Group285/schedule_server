@@ -5,6 +5,7 @@ mod filters;
 mod handlers;
 mod modules;
 
+#[allow(opaque_hidden_inferred_bound)]
 pub fn get_filters(
     db: Database,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -12,4 +13,5 @@ pub fn get_filters(
         .or(filters::post_new_mark(&db))
         .or(filters::update_mark(&db))
         .or(filters::delete_mark(&db))
+        .or(filters::register(&db))
 }

@@ -112,8 +112,8 @@ pub async fn add_subjects_to_database(
     }
 
     for result in insertions {
-        if let Err(msg) = result.await {
-            warn!("insertion error: {:#?}", msg);
+        if let Err(_msg) = result.await {
+            warn!("insertion error");
         }
     }
 

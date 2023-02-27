@@ -19,4 +19,4 @@ dependencies = ["clean", "format"]
 
 [tasks.run-debug]
 command = "env"
-args = ["RUST_LOG=debug", "cargo", "run", "2>&1,"]
+args = ["RUST_LOG=debug", "cargo", "run"]

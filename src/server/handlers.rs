@@ -1,6 +1,8 @@
-use futures::StreamExt;
-use mongodb::{bson::doc, options::FindOptions, Database};
-use serde_json::json;
+use log::debug;
+use mongodb::{
+    bson::{doc, Document},
+    Database,
+};
 use std::convert::Infallible;
 use warp::{
     http::{header, Response, StatusCode},
@@ -24,6 +26,17 @@ pub(crate) async fn list_schedule(
     Ok(warp::reply::json(&lessons))
 }
 
+pub(crate) async fn list_schedule_with_marks(
+    data: ScheduleListOptions,
+    db: Database,
+) -> Result<impl warp::Reply, Infallible> {
+    // get login cookie
+    let lessons = client::get_lessons(data.from.unwrap_or(0), data.to.unwrap_or(0), db)
+        .await
+        .unwrap_or(vec![]);
+    Ok(warp::reply::json(&lessons))
+}
+
 pub(crate) async fn list_users(db: Database) -> Result<impl warp::Reply, Infallible> {
     Ok(StatusCode::OK)
 }
@@ -41,11 +54,38 @@ pub(crate) async fn update_mark(
     mark: Mark,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
+    db.collection::<Mark>("marks")
+        .update_one(
+            doc! {
+                "_id": id
+            },
+            doc! {
+                // FIXME: insert mark data here
+            },
+            None,
+        )
+        .await
+        .unwrap();
     Ok(StatusCode::OK)
 }
 
 pub(crate) async fn delete_mark(id: i64, db: Database) -> Result<impl warp::Reply, Infallible> {
-    Ok(StatusCode::OK)
+    let marks_deleted = db
+        .collection::<Mark>("marks")
+        .delete_one(
+            doc! {
+                "_id": id
+            },
+            None,
+        )
+        .await
+        .unwrap();
+
+    if marks_deleted.deleted_count == 0 {
+        Ok(StatusCode::NOT_FOUND)
+    } else {
+        Ok(StatusCode::OK)
+    }
 }
 
 pub(crate) async fn auth_validation(
@@ -64,6 +104,7 @@ pub(crate) async fn auth_validation(
         .await
         .unwrap()
     {
+        debug!("found user:\n{:#?}", user);
         let cookie = format!("uid_schedule_token={}", &uid);
 
         let response = Response::builder()
