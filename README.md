@@ -1,6 +1,6 @@
 # Основной сервер для расписания группы 285
 
-## Документация
+## Документация по API
 
 [DOCS.md](https://github.com/Group285/schedule_server/blob/master/DOCS.md)
 
