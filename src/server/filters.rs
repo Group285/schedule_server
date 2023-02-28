@@ -1,7 +1,7 @@
 use mongodb::Database;
 use warp::{path, Filter};
 
-use super::modules::ScheduleListOptions;
+use super::modules::{ScheduleListOptions, RegisterOptions};
 
 #[allow(opaque_hidden_inferred_bound)]
 pub fn get_schedule_request(
@@ -51,8 +51,9 @@ pub(crate) fn delete_mark(
 pub(crate) fn register(
     db: &Database,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    path!("auth" / String)
+    path!("auth")
         .and(warp::get())
+        .and(warp::query::<RegisterOptions>())
         .and(with_db(db.clone()))
         .and_then(super::handlers::auth_validation)
 }

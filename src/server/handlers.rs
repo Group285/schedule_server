@@ -14,7 +14,7 @@ use crate::{
     database::{Lesson, Mark, User},
 };
 
-use super::modules::{ScheduleListOptions, Unauthtorized};
+use super::modules::{ScheduleListOptions, Unauthtorized, RegisterOptions};
 
 pub(crate) async fn list_schedule(
     data: ScheduleListOptions,
@@ -89,7 +89,7 @@ pub(crate) async fn delete_mark(id: i64, db: Database) -> Result<impl warp::Repl
 }
 
 pub(crate) async fn auth_validation(
-    uid: String,
+    uid: RegisterOptions,
     db: Database,
 ) -> Result<impl warp::Reply, Rejection> {
     let users = db.collection::<User>("users");
@@ -97,7 +97,7 @@ pub(crate) async fn auth_validation(
     if let Some(user) = users
         .find_one(
             doc! {
-                "uid": &uid
+                "_id": &uid.uid,
             },
             None,
         )
@@ -105,7 +105,7 @@ pub(crate) async fn auth_validation(
         .unwrap()
     {
         debug!("found user:\n{:#?}", user);
-        let cookie = format!("uid_schedule_token={}", &uid);
+        let cookie = format!("uid_schedule_token={}", &uid.uid);
 
         let response = Response::builder()
             .status(StatusCode::OK)
