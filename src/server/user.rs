@@ -1,0 +1,124 @@
+use std::convert::Infallible;
+
+use mongodb::{bson::doc, Database};
+use reqwest::StatusCode;
+use warp::{path, Filter};
+
+use crate::database::User;
+
+use super::{filters::with_db, ServerControl, register_validation};
+
+impl ServerControl for User {
+    fn new_request(
+        db: &Database,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        path!("user")
+            .and(warp::post())
+            // WARNING: can use too much RAM
+            .and(warp::cookie("uid_schedule_token"))
+            .and(warp::body::json())
+            .and(with_db(db.clone()))
+            .and_then(add_user)
+    }
+
+    fn delete_request(
+        db: &Database,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        path!("user" / String)
+            .and(warp::delete())
+            .and(warp::cookie("uid_schedule_token"))
+            .and(with_db(db.clone()))
+            .and_then(delete_user)
+    }
+
+    fn update_request(
+        db: &Database,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        path!("user")
+            .and(warp::put())
+            .and(warp::cookie("uid_schedule_token"))
+            .and(warp::body::json())
+            .and(with_db(db.clone()))
+            .and_then(update_user)
+    }
+
+    fn combined_filter(
+        db: &Database,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        Self::new_request(db)
+            .or(Self::update_request(db))
+            .or(Self::delete_request(db))
+    }
+}
+
+// TODO: add admin check
+async fn add_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
+    if let Some(user) = register_validation(uid, db.clone()).await {
+        if !user.admin {
+            return Ok(StatusCode::UNAUTHORIZED);
+        }
+    } else {
+        return Ok(StatusCode::UNAUTHORIZED);
+    }
+    db.collection("users").insert_one(user, None).await.unwrap();
+    Ok(StatusCode::OK)
+}
+
+// TODO: add admin check
+async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
+    if let Some(user) = register_validation(uid, db.clone()).await {
+        if !user.admin {
+            return Ok(StatusCode::UNAUTHORIZED);
+        }
+    } else {
+        return Ok(StatusCode::UNAUTHORIZED);
+    }
+
+    let user_updated = db
+        .collection::<User>("users")
+        .update_one(
+            doc! {
+                "_id": user._id
+            },
+            doc! {
+                "username": user.username,
+                "admin": user.admin
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    if user_updated.matched_count == 0 {
+        Ok(StatusCode::NOT_FOUND)
+    } else {
+        Ok(StatusCode::OK)
+    }
+}
+
+// TODO: add admin check
+async fn delete_user(id: String, uid: String, db: Database) -> Result<impl warp::Reply, Infallible> {
+    if let Some(user) = register_validation(uid, db.clone()).await {
+        if !user.admin {
+            return Ok(StatusCode::UNAUTHORIZED);
+        }
+    } else {
+        return Ok(StatusCode::UNAUTHORIZED);
+    }
+
+    let user_deleted = db
+        .collection::<User>("users")
+        .delete_one(
+            doc! {
+                "_id": id
+            },
+            None,
+        )
+        .await
+        .unwrap();
+
+    if user_deleted.deleted_count == 0 {
+        Ok(StatusCode::NOT_FOUND)
+    } else {
+        Ok(StatusCode::OK)
+    }
+}

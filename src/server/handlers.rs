@@ -14,107 +14,59 @@ use crate::{
     database::{Lesson, Mark, User},
 };
 
-use super::modules::{ScheduleListOptions, Unauthtorized, RegisterOptions};
+use super::{
+    modules::{RegisterOptions, ScheduleListOptions},
+    register_validation,
+};
 
 pub(crate) async fn list_schedule(
     data: ScheduleListOptions,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    let lessons = client::get_lessons(data.from.unwrap_or(0), data.to.unwrap_or(0), db)
+    let lessons = client::get_lessons(data.from, data.to, db)
         .await
         .unwrap_or(vec![]);
     Ok(warp::reply::json(&lessons))
 }
 
+// TODO: add admin check
+// TODO: get login cookie
 pub(crate) async fn list_schedule_with_marks(
     data: ScheduleListOptions,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    // get login cookie
-    let lessons = client::get_lessons(data.from.unwrap_or(0), data.to.unwrap_or(0), db)
+    let lessons = client::get_lessons(data.from, data.to, db)
         .await
         .unwrap_or(vec![]);
     Ok(warp::reply::json(&lessons))
 }
 
+// TODO: add admin check
 pub(crate) async fn list_users(db: Database) -> Result<impl warp::Reply, Infallible> {
     Ok(StatusCode::OK)
 }
 
+// TODO: add admin check
 pub(crate) async fn get_user_marks(db: Database) -> Result<impl warp::Reply, Infallible> {
     Ok(StatusCode::OK)
-}
-
-pub(crate) async fn add_mark(mark: Mark, db: Database) -> Result<impl warp::Reply, Infallible> {
-    Ok(StatusCode::OK)
-}
-
-pub(crate) async fn update_mark(
-    id: i64,
-    mark: Mark,
-    db: Database,
-) -> Result<impl warp::Reply, Infallible> {
-    db.collection::<Mark>("marks")
-        .update_one(
-            doc! {
-                "_id": id
-            },
-            doc! {
-                // FIXME: insert mark data here
-            },
-            None,
-        )
-        .await
-        .unwrap();
-    Ok(StatusCode::OK)
-}
-
-pub(crate) async fn delete_mark(id: i64, db: Database) -> Result<impl warp::Reply, Infallible> {
-    let marks_deleted = db
-        .collection::<Mark>("marks")
-        .delete_one(
-            doc! {
-                "_id": id
-            },
-            None,
-        )
-        .await
-        .unwrap();
-
-    if marks_deleted.deleted_count == 0 {
-        Ok(StatusCode::NOT_FOUND)
-    } else {
-        Ok(StatusCode::OK)
-    }
 }
 
 pub(crate) async fn auth_validation(
     uid: RegisterOptions,
     db: Database,
-) -> Result<impl warp::Reply, Rejection> {
-    let users = db.collection::<User>("users");
+) -> Result<impl warp::Reply, Infallible> {
+    let mut response = Response::builder();
 
-    if let Some(user) = users
-        .find_one(
-            doc! {
-                "_id": &uid.uid,
-            },
-            None,
-        )
-        .await
-        .unwrap()
-    {
-        debug!("found user:\n{:#?}", user);
-        let cookie = format!("uid_schedule_token={}", &uid.uid);
-
-        let response = Response::builder()
-            .status(StatusCode::OK)
-            .header(header::SET_COOKIE, cookie)
-            .body(hyper::Body::empty())
-            .unwrap();
-
-        Ok(response)
+    if let Some(user) = register_validation(uid.uid.clone(), db).await {
+        response = response
+            .header(
+                header::SET_COOKIE,
+                format!("uid_schedule_token={}", user._id),
+            )
+            .status(StatusCode::OK);
     } else {
-        Err(warp::reject::custom(Unauthtorized))
+        response = response.status(StatusCode::BAD_REQUEST);
     }
+
+    Ok(response.body(hyper::Body::empty()).unwrap())
 }

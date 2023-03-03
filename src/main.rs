@@ -1,3 +1,5 @@
+#![feature(return_position_impl_trait_in_trait)]
+
 extern crate log;
 extern crate pretty_env_logger;
 

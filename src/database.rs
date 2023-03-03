@@ -100,7 +100,7 @@ pub async fn add_subjects_to_database(
         .iter()
         .map(|data| {
             let subject = data.get_subject();
-            debug!("lesson parsed: {:#?}", subject);
+            debug!("subject parsed: {:#?}", subject);
             subject
         })
         .collect();
