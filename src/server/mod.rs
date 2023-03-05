@@ -38,6 +38,15 @@ pub fn get_filters(
         .or(Mark::combined_filter(&db))
 }
 
+/// return true if user is valid and admin
+pub fn is_admin_uid(uid: String, db: Database) -> bool {
+    if Some(user) = register_validation(uid, db) {
+        user.admin
+    } else {
+        false
+    }
+}
+
 /// returns Some(user) if uid valid
 pub async fn register_validation(uid: String, db: Database) -> Option<User> {
     let users = db.collection::<User>("users");

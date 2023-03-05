@@ -6,7 +6,7 @@ use warp::{path, Filter};
 
 use crate::database::User;
 
-use super::{filters::with_db, ServerControl, register_validation};
+use super::{filters::with_db, ServerControl, register_validation, is_admin_uid};
 
 impl ServerControl for User {
     fn new_request(
@@ -51,31 +51,21 @@ impl ServerControl for User {
     }
 }
 
-// TODO: add admin check
 async fn add_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
     db.collection("users").insert_one(user, None).await.unwrap();
     Ok(StatusCode::OK)
 }
 
-// TODO: add admin check
 async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let user_updated = db
-        .collection::<User>("users")
+        .collection("users")
         .update_one(
             doc! {
                 "_id": user._id
@@ -95,18 +85,13 @@ async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp:
     }
 }
 
-// TODO: add admin check
 async fn delete_user(id: String, uid: String, db: Database) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let user_deleted = db
-        .collection::<User>("users")
+        .collection("users")
         .delete_one(
             doc! {
                 "_id": id
