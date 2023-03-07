@@ -9,7 +9,7 @@ use warp::{path, Filter};
 
 use crate::database::Mark;
 
-use super::{filters::with_db, register_validation, ServerControl};
+use super::{filters::with_db, is_admin_uid, register_validation, ServerControl};
 
 impl ServerControl for Mark {
     fn new_request(
@@ -55,18 +55,18 @@ impl ServerControl for Mark {
 
 pub(crate) async fn add_mark(
     uid: String,
-    mark: Mark,
+    mark: Vec<Mark>,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
+<<<<<<< HEAD
     db.collection("marks").insert_one(mark, None).await.unwrap();
+=======
+    db.collection("marks").insert_many(mark, None).await.unwrap();
+>>>>>>> fe60bad3350f8524c4a0e34bb17ebdfe0bcef1d7
 
     Ok(StatusCode::OK)
 }
@@ -76,26 +76,28 @@ pub(crate) async fn update_mark(
     mark: Mark,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let update_result = db
-        .collection::<Mark>("marks")
+        .collection("marks")
         .update_one(
             doc! {
                 "_id": mark._id
             },
             doc! {
+<<<<<<< HEAD
                 "$set": {
                     "lesson_id": mark.lesson_id,
                     "user_id": mark.user_id,
                     "mark": mark.mark
                 }
+=======
+                "lesson_id": mark.lesson_id,
+                "user_id": mark.user_id,
+                "mark": mark.mark,
+>>>>>>> fe60bad3350f8524c4a0e34bb17ebdfe0bcef1d7
             },
             None,
         )
@@ -112,11 +114,7 @@ pub(crate) async fn delete_mark(
     uid: String,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 

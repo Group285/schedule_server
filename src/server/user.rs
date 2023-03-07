@@ -9,7 +9,7 @@ use warp::{path, Filter};
 
 use crate::database::User;
 
-use super::{filters::with_db, register_validation, ServerControl};
+use super::{filters::with_db, ServerControl, register_validation, is_admin_uid};
 
 impl ServerControl for User {
     fn new_request(
@@ -55,32 +55,20 @@ impl ServerControl for User {
 }
 
 async fn add_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
     db.collection("users").insert_one(user, None).await.unwrap();
     Ok(StatusCode::OK)
 }
 
-async fn update_user(
-    uid: String,
-    user: User,
-    db: Database,
-) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let user_updated = db
-        .collection::<User>("users")
+        .collection("users")
         .update_one(
             doc! {
                 "_id": user._id.clone()
@@ -102,21 +90,13 @@ async fn update_user(
     }
 }
 
-async fn delete_user(
-    id: String,
-    uid: String,
-    db: Database,
-) -> Result<impl warp::Reply, Infallible> {
-    if let Some(user) = register_validation(uid, db.clone()).await {
-        if !user.admin {
-            return Ok(StatusCode::UNAUTHORIZED);
-        }
-    } else {
+async fn delete_user(id: String, uid: String, db: Database) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid, db.clone()) {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let user_deleted = db
-        .collection::<User>("users")
+        .collection("users")
         .delete_one(
             doc! {
                 "_id": id
