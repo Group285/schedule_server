@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use warp::reject;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct ScheduleListOptions {

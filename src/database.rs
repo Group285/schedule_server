@@ -40,7 +40,7 @@ pub struct User {
 pub struct Mark {
     pub _id: i64,
     pub lesson_id: i64,
-    pub user_id: i64,
+    pub user_id: String,
     pub mark: String,
 }
 
@@ -48,7 +48,7 @@ pub struct Mark {
 pub struct MonthMark {
     pub _id: i64,
     pub subject_id: i64,
-    pub user_id: i64,
+    pub user_id: String,
     pub mark: String,
     pub month: String,
 }

@@ -1,4 +1,4 @@
-// TODO: add a check for valid lesson_id & user_id
+// TODO: add a check for valid schedule_id & user_id
 // TODO: add a check if same mark._id exists
 
 use std::convert::Infallible;
@@ -7,15 +7,15 @@ use mongodb::{bson::doc, Database};
 use reqwest::StatusCode;
 use warp::{path, Filter};
 
-use crate::database::Mark;
+use crate::database::{Mark, MonthMark};
 
 use super::{filters::with_db, register_validation, ServerControl};
 
-impl ServerControl for Mark {
+impl ServerControl for MonthMark {
     fn new_request(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        path!("mark")
+        path!("monthmark")
             .and(warp::post())
             .and(warp::cookie("uid_schedule_token"))
             .and(warp::body::json())
@@ -26,7 +26,7 @@ impl ServerControl for Mark {
     fn delete_request(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        path!("mark" / i64)
+        path!("monthmark" / i64)
             .and(warp::delete())
             .and(warp::cookie("uid_schedule_token"))
             .and(with_db(db.clone()))
@@ -36,7 +36,7 @@ impl ServerControl for Mark {
     fn update_request(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-        path!("mark")
+        path!("monthmark")
             .and(warp::put())
             .and(warp::cookie("uid_schedule_token"))
             .and(warp::body::json())
@@ -55,7 +55,7 @@ impl ServerControl for Mark {
 
 pub(crate) async fn add_mark(
     uid: String,
-    mark: Mark,
+    mark: MonthMark,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
     if let Some(user) = register_validation(uid, db.clone()).await {
@@ -73,7 +73,7 @@ pub(crate) async fn add_mark(
 
 pub(crate) async fn update_mark(
     uid: String,
-    mark: Mark,
+    mark: MonthMark,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
     if let Some(user) = register_validation(uid, db.clone()).await {
@@ -92,9 +92,10 @@ pub(crate) async fn update_mark(
             },
             doc! {
                 "$set": {
-                    "lesson_id": mark.lesson_id,
+                    "lesson_id": mark.subject_id,
                     "user_id": mark.user_id,
-                    "mark": mark.mark
+                    "mark": mark.mark,
+                    "month": mark.month
                 }
             },
             None,

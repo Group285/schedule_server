@@ -1,3 +1,6 @@
+// TODO: add a check for valid username
+// TODO: add a check if same user._id exists
+
 use std::convert::Infallible;
 
 use mongodb::{bson::doc, Database};
@@ -6,7 +9,7 @@ use warp::{path, Filter};
 
 use crate::database::User;
 
-use super::{filters::with_db, ServerControl, register_validation};
+use super::{filters::with_db, register_validation, ServerControl};
 
 impl ServerControl for User {
     fn new_request(
@@ -14,8 +17,8 @@ impl ServerControl for User {
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         path!("user")
             .and(warp::post())
-            // WARNING: can use too much RAM
             .and(warp::cookie("uid_schedule_token"))
+            // WARNING: can use too much RAM
             .and(warp::body::json())
             .and(with_db(db.clone()))
             .and_then(add_user)
@@ -51,7 +54,6 @@ impl ServerControl for User {
     }
 }
 
-// TODO: add admin check
 async fn add_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
     if let Some(user) = register_validation(uid, db.clone()).await {
         if !user.admin {
@@ -64,8 +66,11 @@ async fn add_user(uid: String, user: User, db: Database) -> Result<impl warp::Re
     Ok(StatusCode::OK)
 }
 
-// TODO: add admin check
-async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
+async fn update_user(
+    uid: String,
+    user: User,
+    db: Database,
+) -> Result<impl warp::Reply, Infallible> {
     if let Some(user) = register_validation(uid, db.clone()).await {
         if !user.admin {
             return Ok(StatusCode::UNAUTHORIZED);
@@ -78,11 +83,13 @@ async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp:
         .collection::<User>("users")
         .update_one(
             doc! {
-                "_id": user._id
+                "_id": user._id.clone()
             },
             doc! {
-                "username": user.username,
-                "admin": user.admin
+                "$set": {
+                    "username": user.username,
+                    "admin": user.admin
+                }
             },
             None,
         )
@@ -95,8 +102,11 @@ async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp:
     }
 }
 
-// TODO: add admin check
-async fn delete_user(id: String, uid: String, db: Database) -> Result<impl warp::Reply, Infallible> {
+async fn delete_user(
+    id: String,
+    uid: String,
+    db: Database,
+) -> Result<impl warp::Reply, Infallible> {
     if let Some(user) = register_validation(uid, db.clone()).await {
         if !user.admin {
             return Ok(StatusCode::UNAUTHORIZED);
