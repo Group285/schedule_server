@@ -4,27 +4,64 @@
 
 ### Условное обозначение вызова API запроса
 
-В API запросы будут обозначаться следующим образом:
+[Стандартный формат HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages)
 
-- `POST request_name(from: int, to: int, test: String?) -> Schedule throws Error`
+Типы данных оборачиваются в ${}, например: ${String}
 
-Это расшифровывается как:
+#### Пример
 
-- Запрос POST на сервер с параметрами from и to типа int, и необязательным параметром test типа String возвращает тип Schedule и может выкинуть ошибку Error
+- Запросы
 
 ### Условные обозначения типов
 
-- Вопрос перед типом обозначает, что переменная необязательна для получения результата от запроса
-- Тип в квадратных скобках означает, что это массив объектов с данным типом. Если в скобках нет числа, то массив неопределенной длины(например [int] и [String 25])
 - int - целочисленный тип(64 бита)
 - float - число с целочисленной дробью
 - String - строка
 - Остальные типы представляют собой сложные структуры, которые будут описаны в json стиле, например:
 
-`
+```http
 Schedule
 {
     "name": String,
     "time": int,
 }
-`
+```
+
+## API
+
+### User
+
+- тип User
+
+```json
+{
+    "_id": String,
+    "username": String,
+    "admin": bool
+}
+```
+
+- Добавить пользователя
+
+```http
+POST /user
+Cookie: uid_schedule_token=${String}
+
+${User}
+```
+
+- Удалить пользователя
+
+```http
+DELETE /user/${String}
+Cookie: uid_schedule_token=${String}
+```
+
+- Обновить пользователя
+
+```http
+PUT /user
+Cookie: uid_schedule_token=${String}
+
+${User}
+```

@@ -11,7 +11,7 @@ use crate::database::{Mark, MonthMark};
 
 use super::{filters::with_db, register_validation, ServerControl};
 
-impl ServerControl for MonthMark {
+impl MonthMark {
     fn new_request(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {

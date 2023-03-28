@@ -40,8 +40,8 @@ pub fn get_filters(
 }
 
 /// return true if user is valid and admin
-pub fn is_admin_uid(uid: String, db: Database) -> bool {
-    if Some(user) = register_validation(uid, db) {
+pub async fn is_admin_uid(uid: String, db: Database) -> bool {
+    if let Some(user) = register_validation(uid, db).await {
         user.admin
     } else {
         false

@@ -9,9 +9,9 @@ use warp::{path, Filter};
 
 use crate::database::Mark;
 
-use super::{filters::with_db, is_admin_uid, register_validation, ServerControl};
+use super::{filters::with_db, is_admin_uid};
 
-impl ServerControl for Mark {
+impl Mark {
     fn new_request(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -44,7 +44,7 @@ impl ServerControl for Mark {
             .and_then(update_mark)
     }
 
-    fn combined_filter(
+    pub fn combined_filter(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         Self::new_request(db)
@@ -58,16 +58,11 @@ pub(crate) async fn add_mark(
     mark: Vec<Mark>,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    if !is_admin_uid(uid, db.clone()) {
+    if !is_admin_uid(uid, db.clone()).await {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
-<<<<<<< HEAD
-    db.collection("marks").insert_one(mark, None).await.unwrap();
-=======
     db.collection("marks").insert_many(mark, None).await.unwrap();
->>>>>>> fe60bad3350f8524c4a0e34bb17ebdfe0bcef1d7
-
     Ok(StatusCode::OK)
 }
 
@@ -76,28 +71,22 @@ pub(crate) async fn update_mark(
     mark: Mark,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    if !is_admin_uid(uid, db.clone()) {
+    if !is_admin_uid(uid, db.clone()).await {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let update_result = db
-        .collection("marks")
+        .collection<Mark>("marks")
         .update_one(
             doc! {
                 "_id": mark._id
             },
             doc! {
-<<<<<<< HEAD
                 "$set": {
                     "lesson_id": mark.lesson_id,
                     "user_id": mark.user_id,
                     "mark": mark.mark
                 }
-=======
-                "lesson_id": mark.lesson_id,
-                "user_id": mark.user_id,
-                "mark": mark.mark,
->>>>>>> fe60bad3350f8524c4a0e34bb17ebdfe0bcef1d7
             },
             None,
         )
@@ -114,7 +103,7 @@ pub(crate) async fn delete_mark(
     uid: String,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    if !is_admin_uid(uid, db.clone()) {
+    if !is_admin_uid(uid, db.clone()).await {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 

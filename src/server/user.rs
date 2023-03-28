@@ -9,9 +9,9 @@ use warp::{path, Filter};
 
 use crate::database::User;
 
-use super::{filters::with_db, ServerControl, register_validation, is_admin_uid};
+use super::{filters::with_db, is_admin_uid};
 
-impl ServerControl for User {
+impl User {
     fn new_request(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -45,7 +45,7 @@ impl ServerControl for User {
             .and_then(update_user)
     }
 
-    fn combined_filter(
+    pub fn combined_filter(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         Self::new_request(db)
@@ -68,7 +68,7 @@ async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp:
     }
 
     let user_updated = db
-        .collection("users")
+        .collection<User>("users")
         .update_one(
             doc! {
                 "_id": user._id.clone()
