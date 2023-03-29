@@ -8,60 +8,67 @@
 
 Типы данных оборачиваются в ${}, например: ${String}
 
-#### Пример
-
-- Запросы
-
 ### Условные обозначения типов
 
 - int - целочисленный тип(64 бита)
 - float - число с целочисленной дробью
 - String - строка
 - Остальные типы представляют собой сложные структуры, которые будут описаны в json стиле, например:
-
-```http
-Schedule
-{
-    "name": String,
-    "time": int,
-}
-```
+        {
+            "name": String,
+            "time": int,
+        }
 
 ## API
 
 ### User
 
-- тип User
+#### Тип User
 
-```json
-{
-    "_id": String,
-    "username": String,
-    "admin": bool
-}
-```
+    {
+        "_id": String,
+        "username": String,
+        "admin": bool
+    }
+
+---
 
 - Добавить пользователя
+  - Запрос
+        POST /user
+        Cookie: uid_schedule_token=${String}
 
-```http
-POST /user
-Cookie: uid_schedule_token=${String}
-
-${User}
-```
+        ${User}
+  - Ответ
+    - Если логин имеет права доступа и пользователь валиден
+            HTTP/1.1 200 OK
+    - Если логин не имеет прав доступа
+            HTTP/1.1 401 UNAUTHORIZED
+    - Если пользователь не валиден
+            TODO
 
 - Удалить пользователя
-
-```http
-DELETE /user/${String}
-Cookie: uid_schedule_token=${String}
-```
+  - Запрос
+        DELETE /user/${String}
+        Cookie: uid_schedule_token=${String}
+  - Ответ
+    - Если логин имеет права доступа и uid пользователя существует
+            HTTP/1.1 200 OK
+    - Если логин не имеет прав доступа
+            HTTP/1.1 401 UNAUTHORIZED
+    - Если uid пользователя не существует
+            HTTP/1.1 404 NOT_FOUND
 
 - Обновить пользователя
+  - Запрос
+        PUT /user
+        Cookie: uid_schedule_token=${String}
 
-```http
-PUT /user
-Cookie: uid_schedule_token=${String}
-
-${User}
-```
+        ${User}
+  - Ответ
+    - Если логин имеет права доступа и uid пользователя существует
+            HTTP/1.1 200 OK
+    - Если логин не имеет прав доступа
+            HTTP/1.1 401 UNAUTHORIZED
+    - Если uid пользователя не существует
+            HTTP/1.1 404 NOT_FOUND
