@@ -1,68 +1,105 @@
-use mongodb::Database;
-use std::convert::Infallible;
+use mongodb::{bson::doc, Database};
+use std::{collections::HashMap, convert::Infallible};
 use warp::{
     http::{header, Response, StatusCode},
-    hyper,
+    hyper, Reply,
 };
 
-use crate::client;
+use crate::{
+    client,
+    database::{Lesson, Mark},
+};
 
 use super::{
-    modules::{RegisterOptions, ScheduleListOptions},
+    is_admin_uid,
+    modules::{RegisterOptions, ScheduleListOptions, UserMarksOptions},
     register_validation,
 };
 
 pub(crate) async fn list_schedule(
+    uid: String,
     data: ScheduleListOptions,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid, db.clone()).await {
+        return Ok(StatusCode::UNAUTHORIZED.into_response());
+    }
+
     let lessons = client::get_lessons(data.from, data.to, db)
         .await
         .unwrap_or(vec![]);
-    Ok(warp::reply::json(&lessons))
+    Ok(warp::reply::json(&lessons).into_response())
 }
 
 // TODO: add admin check
 // TODO: get login cookie
 pub(crate) async fn list_schedule_with_marks(
+    uid: String,
     data: ScheduleListOptions,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
-    // if let Some(user) = register_validation(uid, db.clone()).await {
-    // } else {
-    //     return Ok(StatusCode::UNAUTHORIZED);
-    // }
-
-    let lessons = client::get_lessons(data.from, data.to, db)
+    let lessons = client::get_lessons(data.from, data.to, db.clone())
         .await
         .unwrap_or(vec![]);
-    Ok(warp::reply::json(&lessons))
+
+    let mut result: Vec<(Lesson, Option<Mark>)> = Vec::new();
+
+    // iterate over lessons to get all marks for each lesson provided
+    for lesson in lessons {
+        let mark = db
+            .collection::<Mark>("marks")
+            .find_one(
+                doc! {
+                    "lesson_id": lesson._id,
+                    "user_id": &uid
+                },
+                None,
+            )
+            .await
+            .unwrap();
+
+        result.push((lesson, mark));
+    }
+
+    Ok(warp::reply::json(&result))
 }
 
 // TODO: add admin check
-pub(crate) async fn list_users(db: Database) -> Result<impl warp::Reply, Infallible> {
-    // if let Some(user) = register_validation(uid, db.clone()).await {
-    //     if !user.admin {
-    //         return Ok(StatusCode::UNAUTHORIZED);
-    //     }
-    // } else {
-    //     return Ok(StatusCode::UNAUTHORIZED);
-    // }
+pub(crate) async fn get_user_marks(
+    uid: String,
+    data: UserMarksOptions,
+    db: Database,
+) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid, db.clone()).await {
+        return Ok(StatusCode::UNAUTHORIZED.into_response());
+    }
 
-    Ok(StatusCode::OK)
-}
+    let lessons = client::get_lessons(data.from, data.to, db.clone())
+        .await
+        .unwrap_or(vec![]);
 
-// TODO: add admin check
-pub(crate) async fn get_user_marks(db: Database) -> Result<impl warp::Reply, Infallible> {
-    // if let Some(user) = register_validation(uid, db.clone()).await {
-    //     if !user.admin {
-    //         return Ok(StatusCode::UNAUTHORIZED);
-    //     }
-    // } else {
-    //     return Ok(StatusCode::UNAUTHORIZED);
-    // }
+    let mut result: Vec<Mark> = Vec::new();
 
-    Ok(StatusCode::OK)
+    // iterate over lessons to get all marks for each lesson provided
+    for lesson in lessons {
+        let mark = db
+            .collection::<Mark>("marks")
+            .find_one(
+                doc! {
+                    "lesson_id": lesson._id,
+                    "user_id": &data.uid
+                },
+                None,
+            )
+            .await
+            .unwrap();
+
+        if let Some(mark) = mark {
+            result.push(mark);
+        }
+    }
+
+    Ok(warp::reply::json(&result).into_response())
 }
 
 pub(crate) async fn auth_validation(

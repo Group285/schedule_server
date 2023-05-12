@@ -24,6 +24,22 @@
 
 ## API
 
+### Регистрация
+
+- Получить куки с токеном
+  - Запрос
+
+        GET /auth?uid=${str}
+
+  - Ответ
+    - Если логин валиден
+
+            HTTP/1.1 200 OK
+
+            Set-Cookie: uid_schedule_token=${str}
+
+    uid_schedule_token - куки токен, используемый при регистрации
+
 ### User
 
 #### Тип User
@@ -170,5 +186,167 @@
             HTTP/1.1 401 UNAUTHORIZED
 
     - Если id оценки не существует
+
+            HTTP/1.1 404 NOT_FOUND
+
+### MonthMark
+
+#### Тип MonthMark
+
+    {
+        "_id": int,
+        "subject_id": int,
+        "user_id": str,
+        "mark": str,
+        "month": str
+    }
+
+---
+
+- Добавить оценку
+  - Запрос
+
+        POST /mark
+        Cookie: uid_schedule_token=${str}
+
+        ${MonthMark}
+
+  - Ответ
+    - Если логин имеет права доступа и оценка валидна
+
+            HTTP/1.1 200 OK
+
+    - Если логин не имеет прав доступа
+
+            HTTP/1.1 401 UNAUTHORIZED
+
+    - Если оценка не валидна
+
+            TODO
+
+- Удалить оценку
+  - Запрос
+
+        DELETE /mark/${str}
+        Cookie: uid_schedule_token=${str}
+
+  - Ответ
+
+    - Если логин имеет права доступа и id оценки существует
+
+            HTTP/1.1 200 OK
+
+    - Если логин не имеет прав доступа
+
+            HTTP/1.1 401 UNAUTHORIZED
+
+    - Если id оценки не существует
+
+            HTTP/1.1 404 NOT_FOUND
+
+- Обновить оценку
+  - Запрос
+
+        PUT /mark
+        Cookie: uid_schedule_token=${str}
+
+        ${MonthMark}
+
+  - Ответ
+    - Если логин имеет права доступа и id оценки существует
+
+            HTTP/1.1 200 OK
+
+    - Если логин не имеет прав доступа
+
+            HTTP/1.1 401 UNAUTHORIZED
+
+    - Если id оценки не существует
+
+            HTTP/1.1 404 NOT_FOUND
+
+### User
+
+#### Тип User
+
+    {
+        "_id": int,
+        "sort": int,
+        "date": int,
+        "start": int,
+        "end": int,
+        "subject_id": int,
+        "classroom": Classroom,
+    }
+
+#### Тип Classroom
+
+    {
+        "_id": int,
+        "title": str,
+        "has_computers": bool,
+    }
+
+---
+
+- Добавить пользователя
+  - Запрос
+
+        POST /user
+        Cookie: uid_schedule_token=${str}
+
+        ${User}
+
+  - Ответ
+    - Если логин имеет права доступа и пользователь валиден
+
+            HTTP/1.1 200 OK
+
+    - Если логин не имеет прав доступа
+
+            HTTP/1.1 401 UNAUTHORIZED
+
+    - Если оценка не валидна
+
+            TODO
+
+- Удалить пользователя
+  - Запрос
+
+        DELETE /user/${str}
+        Cookie: uid_schedule_token=${str}
+
+  - Ответ
+
+    - Если логин имеет права доступа и id пользователя существует
+
+            HTTP/1.1 200 OK
+
+    - Если логин не имеет прав доступа
+
+            HTTP/1.1 401 UNAUTHORIZED
+
+    - Если id пользователя не существует
+
+            HTTP/1.1 404 NOT_FOUND
+
+- Обновить пользователя
+  - Запрос
+
+        PUT /mark
+        Cookie: uid_schedule_token=${str}
+
+        ${User}
+
+  - Ответ
+    - Если логин имеет права доступа и id пользователя существует
+
+            HTTP/1.1 200 OK
+
+    - Если логин не имеет прав доступа
+
+            HTTP/1.1 401 UNAUTHORIZED
+
+    - Если id пользователя не существует
 
             HTTP/1.1 404 NOT_FOUND

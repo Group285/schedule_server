@@ -2,7 +2,7 @@ use log::debug;
 use mongodb::{bson::doc, Database};
 use warp::Filter;
 
-use crate::database::{Mark, User};
+use crate::database::{Mark, User, MonthMark};
 
 mod filters;
 mod handlers;
@@ -10,24 +10,6 @@ mod mark;
 mod modules;
 mod user;
 mod monthmark;
-
-trait ServerControl {
-    fn new_request(
-        db: &Database,
-    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone;
-
-    fn delete_request(
-        db: &Database,
-    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone;
-
-    fn update_request(
-        db: &Database,
-    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone;
-
-    fn combined_filter(
-        db: &Database,
-    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone;
-}
 
 #[allow(opaque_hidden_inferred_bound)]
 pub fn get_filters(
@@ -37,6 +19,7 @@ pub fn get_filters(
         .or(filters::register(&db))
         .or(User::combined_filter(&db))
         .or(Mark::combined_filter(&db))
+        .or(MonthMark::combined_filter(&db))
 }
 
 /// return true if user is valid and admin

@@ -3,15 +3,28 @@
 
 use std::convert::Infallible;
 
+use chrono::Date;
+use futures::StreamExt;
 use mongodb::{bson::doc, Database};
 use reqwest::StatusCode;
-use warp::{path, Filter};
+use warp::{path, Filter, Reply};
 
 use crate::database::User;
 
-use super::{filters::with_db, is_admin_uid};
+use super::{filters::with_db, is_admin_uid, modules::UserListOptions};
 
 impl User {
+    fn get_request(
+        db: &Database,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+        path!("user")
+            .and(warp::get())
+            .and(warp::cookie("uid_schedule_token"))
+            .and(warp::query::<UserListOptions>())
+            .and(with_db(db.clone()))
+            .and_then(get_users)
+    }
+
     fn new_request(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -49,26 +62,31 @@ impl User {
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         Self::new_request(db)
+            .or(Self::get_request(db))
             .or(Self::update_request(db))
             .or(Self::delete_request(db))
     }
 }
 
 async fn add_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
-    if !is_admin_uid(uid, db.clone()) {
+    if !is_admin_uid(uid, db.clone()).await {
         return Ok(StatusCode::UNAUTHORIZED);
     }
     db.collection("users").insert_one(user, None).await.unwrap();
     Ok(StatusCode::OK)
 }
 
-async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp::Reply, Infallible> {
-    if !is_admin_uid(uid, db.clone()) {
+async fn update_user(
+    uid: String,
+    user: User,
+    db: Database,
+) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid, db.clone()).await {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let user_updated = db
-        .collection<User>("users")
+        .collection::<User>("users")
         .update_one(
             doc! {
                 "_id": user._id.clone()
@@ -90,13 +108,17 @@ async fn update_user(uid: String, user: User, db: Database) -> Result<impl warp:
     }
 }
 
-async fn delete_user(id: String, uid: String, db: Database) -> Result<impl warp::Reply, Infallible> {
-    if !is_admin_uid(uid, db.clone()) {
+async fn delete_user(
+    id: String,
+    uid: String,
+    db: Database,
+) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid, db.clone()).await {
         return Ok(StatusCode::UNAUTHORIZED);
     }
 
     let user_deleted = db
-        .collection("users")
+        .collection::<User>("users")
         .delete_one(
             doc! {
                 "_id": id
@@ -111,4 +133,37 @@ async fn delete_user(id: String, uid: String, db: Database) -> Result<impl warp:
     } else {
         Ok(StatusCode::OK)
     }
+}
+
+async fn get_users(
+    uid: String,
+    data: UserListOptions,
+    db: Database,
+) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid, db.clone()).await {
+        return Ok(warp::reply::with_status(
+            warp::reply(),
+            StatusCode::UNAUTHORIZED,
+        ).into_response());
+    }
+
+    let mut cursor = db
+        .collection::<User>("users")
+        .find(
+            doc! {
+                "uid": data.uid,
+                "username": data.name
+            },
+            None,
+        )
+        .await
+        .unwrap();
+
+    let mut users = Vec::new();
+
+    while let Some(user) = cursor.next().await {
+        users.push(user.unwrap());
+    }
+
+    Ok(warp::reply::json(&users).into_response())
 }

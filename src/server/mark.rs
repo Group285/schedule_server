@@ -76,7 +76,7 @@ pub(crate) async fn update_mark(
     }
 
     let update_result = db
-        .collection<Mark>("marks")
+        .collection::<Mark>("marks")
         .update_one(
             doc! {
                 "_id": mark._id

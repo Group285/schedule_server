@@ -1,5 +1,3 @@
-#![feature(return_position_impl_trait_in_trait)]
-
 extern crate log;
 extern crate pretty_env_logger;
 
@@ -18,7 +16,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     if env::var_os("RUST_LOG").is_none() {
         // Set `RUST_LOG=todos=debug` to see debug logs,
         // this only shows access logs.
-        env::set_var("RUST_LOG", "todos=info");
+        env::set_var("RUST_LOG", "server=info");
     }
     pretty_env_logger::init();
 

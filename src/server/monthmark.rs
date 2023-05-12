@@ -9,7 +9,7 @@ use warp::{path, Filter};
 
 use crate::database::{Mark, MonthMark};
 
-use super::{filters::with_db, register_validation, ServerControl};
+use super::{filters::with_db, register_validation};
 
 impl MonthMark {
     fn new_request(
@@ -44,7 +44,7 @@ impl MonthMark {
             .and_then(update_mark)
     }
 
-    fn combined_filter(
+    pub fn combined_filter(
         db: &Database,
     ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         Self::new_request(db)
