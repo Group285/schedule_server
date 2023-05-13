@@ -40,6 +40,56 @@
 
     uid_schedule_token - куки токен, используемый при регистрации
 
+### Просмотр расписания
+
+#### Тип Lesson
+
+    {
+        "_id": int,
+        "sort": int,
+        "date": int,
+        "start": int,
+        "end": int,
+        "subject_id": int,
+        "classroom": Classroom
+    }
+
+#### Тип Classroom
+
+   {
+        "_id": int,
+        "title": int,
+        "has_computers": bool
+   }
+
+---
+
+- Просмотр расписания
+  - Запрос
+
+        GET /schedule?from=${int}&to=${int}
+        Cookie: uid_schedule_token=${str}
+
+  - Ответ
+    - Если uid_schedule_token имеет права админа и from, to и uid валидны
+
+            HTTP/1.1 200 OK
+
+            ${[Lesson]}
+
+- Просмотр расписания с оценкой
+  - Запрос
+
+        GET /schedule?from=${int}&to=${int}
+        Cookie: uid_schedule_token=${str}
+
+  - Ответ
+    - Если uid_schedule_token, from и to валидны
+
+            HTTP/1.1 200 OK
+
+            ${[(Lesson, Mark)]}
+
 ### User
 
 #### Тип User

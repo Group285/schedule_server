@@ -38,6 +38,10 @@ pub(crate) async fn list_schedule_with_marks(
     data: ScheduleListOptions,
     db: Database,
 ) -> Result<impl warp::Reply, Infallible> {
+    if !is_admin_uid(uid.clone(), db.clone()).await {
+        return Ok(StatusCode::UNAUTHORIZED.into_response());
+    }
+
     let lessons = client::get_lessons(data.from, data.to, db.clone())
         .await
         .unwrap_or(vec![]);
@@ -61,7 +65,7 @@ pub(crate) async fn list_schedule_with_marks(
         result.push((lesson, mark));
     }
 
-    Ok(warp::reply::json(&result))
+    Ok(warp::reply::json(&result).into_response())
 }
 
 // TODO: add admin check
